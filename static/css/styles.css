@@ -1,0 +1,91 @@
+/* General Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: black;
+    color: white;
+}
+
+/* Matrix Rain Canvas */
+#matrixRainCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Navbar Styles */
+.navbar {
+    display: flex;
+    justify-content: center;   /* Center navbar content horizontally */
+    align-items: center;       /* Center navbar vertically */
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 1rem 2rem;
+    gap: 2rem;  /* Space between brand and links */
+}
+
+/* Brand Name Styling */
+.navbar-brand {
+    color: #0F0 !important;  /* Matrix green */
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+}
+
+/* Navbar Links */
+.navbar-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2.5rem;  /* Space between links */
+}
+
+/* Link Styles */
+.nav-link {
+    color: #0F0 !important;  /* Matrix green */
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+/* Active Link Styling */
+.nav-link.active {
+    border-bottom: 2px solid white;
+}
+
+/* Hover Effect */
+.nav-link:hover {
+    color: white;
+    transform: scale(1.1); /* Zoom effect on hover */
+}
+
+/* Responsive Design for Small Screens */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;  /* Stack content on small screens */
+        padding: 1rem;
+    }
+
+    .navbar-nav {
+        flex-direction: column;
+        gap: 1rem;  /* Adjust spacing */
+    }
+}
+
+/* Home Page Styles */
+h1, p {
+    text-align: center;
+    margin-top: 10%;
+    color: white;
+}
+
+p {
+    font-size: 1.5rem;
+    color: white;
+}
+
