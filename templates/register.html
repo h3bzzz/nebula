@@ -1,18 +1,27 @@
 {{ define "content" }}
 <h1>Join Us!</h1>
 <form action="/register" method="POST" enctype="multipart/form-data">
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required minlength="5" maxlength="20" />
+    <!-- CSRF TOKEN -->
+     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required />
+     <!-- Username -->
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" name="username" class="form-control" id="username" placeholder="Hacker Alias">
 
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required minlength="14" />
+        <label for="email">Email</label>
+        <input type="email" name="email" class="form-control" id="email" placeholder="Enter email">
 
-    <label for="profile_picture">Profile Picture (PNG/JPG):</label>
-    <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg" required />
+        <label for="password">Password</label>
+        <input type="password" name="password" class="form-control" id="password" placeholder="Enter password">
 
-    <button type="submit">Register</button>
+        <label for="password_confirm">Confirm Password</label>
+        <input type="password" name="password_confirm" class="form-control" id="password_confirm" placeholder="Confirm password">
+
+        <label for="profile_picture"> Profile Image (PNG/JPG): </label>
+        <input type="file" name="profile_picture" class="form-control" id="profile_picture">
+
+        <button type="submit" class="btn btn-primary">Join Sy-Fi Networks</button>
+        </div>
 </form>
 {{ end }}

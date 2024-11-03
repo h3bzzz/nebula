@@ -11,6 +11,7 @@ CREATE TABLE users (
     email VARCHAR(255),
     password VARCHAR(255) NOT NULL,
     profile_picture BYTEA,
+    role VARCHAR(255) DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

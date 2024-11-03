@@ -11,8 +11,10 @@ import (
 	"os/signal"
 	"time"
 
+	"nebula/controllers"
 	"nebula/handlers"
 
+	"github.com/boj/redistore"
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -21,11 +23,38 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/time/rate"
 )
 
-// Database Connection Config
-var db *sqlx.DB
+// Global Variables
+var (
+	rdb  *redis.Client
+	psdb *sqlx.DB
+	ctx  = context.Background()
+)
+
+// Redis Connection Config
+// Need to create a certificate and key for TLS and for securing all paths
+// with the server
+
+func rdbInit() {
+	// Redis Connection Config
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       3,
+	})
+
+	_, err := rdb.Ping(ctx).Result()
+	if err != nil {
+		log.Fatalf("Error connecting to Redis: %v", err)
+	}
+
+	log.Println("Connected to Nebula Redis database")
+}
+
+// Postgresql Connection Config
 
 func initDB() *sqlx.DB {
 	err := godotenv.Load()
@@ -67,7 +96,7 @@ func initDB() *sqlx.DB {
 
 	log.Println("Connected to Nebula PostgreSQL database")
 
-	return db
+	return psdb
 }
 
 // Custom Renderer for Echo
@@ -85,11 +114,24 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 	return tmpl.ExecuteTemplate(w, "base.html", data)
 }
 
+// MAIN
 func main() {
 
 	// Initialize Database
-	db = initDB()
-	defer db.Close()
+	psdb = initDB()
+	defer psdb.Close()
+
+	// Initialize Redis
+	rdbInit()
+
+	// Initialize Redis Store
+	store, err := redistore.NewRediStore(10, "tcp", "localhost:6379", "", []byte("secret"))
+	if err != nil {
+		log.Fatalf("Error creating Redis Store: %v", err)
+	}
+	defer store.Close()
+	// Session lasts 24 hrs
+	store.SetMaxAge(86400)
 
 	// Start Echo
 	e := echo.New()
@@ -110,6 +152,14 @@ func main() {
 		ContentSecurityPolicy: "default-src 'self'",
 		ReferrerPolicy:        "same-origin",
 	}))
+
+	// CSRF Protection
+	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup: "form:csrf_token",
+	}))
+
+	// Cookie Store
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
 
 	templateFiles := []string{
 		"home.html",
@@ -142,10 +192,12 @@ func main() {
 	e.GET("/hof", handlers.HofHandler)
 	e.GET("/who", handlers.WhoHandler)
 
-	e.POST("/register", handlers.RegisterUser(db))
+	// Authentication Routes
+	e.POST("/register", controllers.RegisterUser(psdb))
 	e.GET("/register", handlers.RenderRegisterPage)
-	e.POST("/login", handlers.LoginUser(db, e.Logger))
+	e.POST("/login", controllers.LoginUser(psdb))
 	e.GET("/login", handlers.RenderLoginPage)
+	e.GET("/logout", controllers.LogoutUser())
 
 	// End of Routes
 

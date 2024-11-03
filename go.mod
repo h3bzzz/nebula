@@ -21,10 +21,14 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	filippo.io/nistec v0.0.2 // indirect
+	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/bytemare/crypto v0.4.3 // indirect
 	github.com/bytemare/hash v0.1.5 // indirect
 	github.com/bytemare/hash2curve v0.1.3 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
@@ -33,6 +37,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/redis/go-redis/v9 v9.7.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/net v0.28.0 // indirect
