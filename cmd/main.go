@@ -96,7 +96,7 @@ func initDB() *sqlx.DB {
 
 	log.Println("Connected to Nebula PostgreSQL database")
 
-	return psdb
+	return db
 }
 
 // Custom Renderer for Echo
