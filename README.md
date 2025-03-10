@@ -1,4 +1,4 @@
-H1🌌 Nebula
+<h1> 🌌 Nebula
 Nebula is a secure, full-stack web application designed to connect innovators worldwide through cutting-edge cybersecurity features, technology news, and an interactive community.
 The project demonstrates backend capabilities using Go, PostgreSQL, Redis, and Echo, coupled with a frontend enhanced by Bootstrap.
 
