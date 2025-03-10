@@ -1,16 +1,16 @@
-🌌 Nebula
+H1🌌 Nebula
 Nebula is a secure, full-stack web application designed to connect innovators worldwide through cutting-edge cybersecurity features, technology news, and an interactive community.
 The project demonstrates backend capabilities using Go, PostgreSQL, Redis, and Echo, coupled with a frontend enhanced by Bootstrap.
 
-🚀 Features
-User Authentication:
+H@ 🚀 Features
+# User Authentication:
 
 Secure registration, login, and logout flow.
 CSRF protection and session management using Redis.
 Password hashing with bcrypt for enhanced security.
 Dynamic Web Pages:
 
-Homepage with a customizable Matrix rain background.
+# Homepage with a customizable Matrix rain background.
 Dedicated sections for:
 News: Latest technology and cybersecurity updates.
 TTPS (Tactics, Techniques, and Procedures).
@@ -18,13 +18,13 @@ Hacks of Fame: A curated list of impactful hacks and their analysis.
 WhoAmI: A place for innovators to share their stories.
 MessageWall for communication with advanced sanitization.
 
-Performance & Security:
+# Performance & Security:
 HTTPS with secure headers (HSTS, Content Security Policy, etc.).
 Protection against common vulnerabilities like XSS and CSRF.
 Rate limiting to prevent brute-force attacks.
 Scalable Architecture:
 
-Backend built with Go for high performance and concurrency.
+# Backend built with Go for high performance and concurrency.
 PostgreSQL for reliable and efficient data storage.
 Redis for session and token management.
 Responsive Design:
@@ -56,7 +56,6 @@ Sqlx (database interaction)
 ⚙️ Installation and Setup
 Follow these steps to get Nebula up and running:
 
-
 Run the Application
 Start PostgreSQL and Redis.
 Initialize the database:
@@ -69,7 +68,7 @@ Copy code
 air
 The server will start on http://localhost:7777.
 
-🌐 API Endpoints
+# 🌐 API Endpoints
 Here’s a quick overview of the available and upcoming routes:
 
 Public Routes
@@ -91,7 +90,7 @@ Method	Endpoint	Description
 GET	/api/news	Retrieve the latest news articles
 GET	/api/articles	Retrieve hacking articles
 
-🛡️ Security Features
+# 🛡️ Security Features
 CSRF Protection: Middleware ensures that requests include a valid CSRF token.
 Password Hashing: User passwords are hashed with bcrypt.
 Secure Cookies: Session cookies are HTTP-only and use the SameSite attribute.
