@@ -85,7 +85,260 @@ h1, p {
 }
 
 p {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: white;
+    line-height: 1.5;
+}
+
+/* Whoami Page Styles */
+.whoami-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid #0F0;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+.neon-heading {
+    text-align: center;
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    color: #0F0;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+    letter-spacing: 3px;
+}
+
+.bio-container {
+    margin-bottom: 2rem;
+}
+
+.bio-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #0F0;
+    padding-bottom: 1rem;
+}
+
+.hacker-avatar {
+    width: 80px;
+    height: 80px;
+    background-color: #0F0;
+    color: black;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-right: 1rem;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.hacker-info h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.location {
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
+    color: #999;
+}
+
+.bio-content p {
+    text-align: left;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.skill-box {
+    border: 1px solid #0F0;
+    padding: 1.5rem;
+    background-color: rgba(0, 50, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.skill-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+}
+
+.skill-box h3 {
+    margin-top: 0;
+    color: #0F0;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+.skill-box ul {
+    padding-left: 1.2rem;
+    margin: 0;
+}
+
+.skill-box li {
+    margin-bottom: 0.5rem;
+    color: #DDD;
+}
+
+/* Responsive styles for whoami page */
+@media (max-width: 768px) {
+    .skills-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .bio-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .hacker-avatar {
+        margin: 0 auto 1rem;
+    }
+}
+
+/* News and Articles Styles */
+.news-container, .article-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid #0F0;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+.articles-list {
+    margin: 2rem 0;
+}
+
+.article-card {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-left: 3px solid #0F0;
+    background-color: rgba(0, 30, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.article-title {
+    margin-top: 0;
+    font-size: 1.4rem;
+}
+
+.article-title a {
+    color: #0F0;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.article-title a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.no-articles {
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+.admin-controls {
+    margin-top: 2rem;
+    text-align: right;
+}
+
+.article-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #0F0;
+    padding-bottom: 1rem;
+}
+
+.article-content {
+    line-height: 1.6;
+}
+
+.article-content h1, .article-content h2, .article-content h3 {
+    color: #0F0;
+}
+
+.article-content a {
+    color: #0F0;
+    text-decoration: underline;
+}
+
+.article-content a:hover {
+    color: white;
+}
+
+.article-content pre {
+    background-color: rgba(0, 30, 0, 0.5);
+    padding: 1rem;
+    overflow-x: auto;
+    border-left: 3px solid #0F0;
+}
+
+.article-content code {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1rem auto;
+}
+
+.article-footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid #0F0;
+}
+
+.back-link {
+    color: #0F0;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.back-link:hover {
+    color: white;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 1px solid #0F0;
+    background-color: transparent;
+    color: #0F0;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #0F0;
+    color: black;
+}
+
+.btn-primary {
+    background-color: rgba(0, 255, 0, 0.2);
 }
 

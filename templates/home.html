@@ -1,10 +1,18 @@
 {{ define "content" }}
-<!DOCTYPE html>
-  <title>{{ .Title }}</title>
-  </head>
-  <body>
-    <h1> Welcome to Sy-Fi Networks </h1>
-    <p> where hackers unite in a digital matrix...</p>
-  </body>
-</html>
+<div class="jumbotron">
+  <h1 class="display-4">Welcome to Sy-Fi Networks</h1>
+  <p class="lead">Where hackers unite in a digital matrix...</p>
+  
+  {{if .Authenticated}}
+    {{if .Username}}
+    <p>Logged in as: <strong>{{.Username}}</strong></p>
+    {{end}}
+    <a href="/logout" class="btn btn-primary">Logout</a>
+  {{else}}
+    <p>
+      <a href="/login" class="btn btn-primary">Login</a>
+      <a href="/register" class="btn btn-secondary">Register</a>
+    </p>
+  {{end}}
+</div>
 {{ end }}

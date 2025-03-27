@@ -7,8 +7,12 @@ import (
 )
 
 func HofHandler(c echo.Context) error {
-	return c.Render(http.StatusOK, "hof.html", map[string]interface{}{
-		"Title": "Hacks of Fame",
-		"Hof":   "active",
-	})
+	authenticated, _ := c.Get("authenticated").(bool)
+
+	data := map[string]interface{}{
+		"Title":         "Hacks of Fame",
+		"ActivePage":    "hof",
+		"Authenticated": authenticated,
+	}
+	return c.Render(http.StatusOK, "hof.html", data)
 }

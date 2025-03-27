@@ -1,10 +1,71 @@
 {{ define "content" }}
-
-  <title>{{ .Title }}</title>
-  </head>
-  <body>
-    <h1> Whoami </h1>
-    <p> my introduction will go here </p>
-  </body>
-</html>
+<div class="whoami-container">
+  <h1 class="neon-heading">Whoami</h1>
+  
+  <div class="bio-container">
+    <div class="bio-header">
+      <div class="hacker-avatar">H</div>
+      <div class="hacker-info">
+        <h2>h3bzzz</h2>
+        <p class="location">Los Angeles, CA</p>
+      </div>
+    </div>
+    
+    <div class="bio-content">
+      <p>Hello, my name is Heber, also known as h3bzzz or heeeeeeebrrrrr 
+      in the tech community. I am an Ethical Hacker and 
+      Software Developer based in Los Angeles, California, with a focus 
+      on Web Application Security and Development. My technical expertise 
+      spans programming languages, including Golang(echo,GOTH), Python(Flask,Django), 
+      JavaScript(AlpineJS,JQuery), PHP(7.2), to build secure, 
+      scalable, and performance-driven applications. Over the past several years, 
+      I've developed a strong foundation in cybersecurity principles, 
+      specializing in identifying vulnerabilities in modern 
+      web applications and designing tools to assist with 
+      penetration testing and bug bounty hunting. My work often involves 
+      developing custom port scanners, endpoint detection systems, 
+      and full-stack web platforms that integrate advanced 
+      security features. I am deeply committed to continuous learning 
+      and staying current with evolving security threats, 
+      OWASP methodologies, and emerging technologies. 
+      Whether auditing systems for weaknesses, building robust 
+      backend infrastructure, or creating tools to support the 
+      ethical hacking community, I bring a detail-oriented and 
+      security-first mindset to every project I undertake. You'll find
+      me down some rabbit hole of knowledge on the wires. Happy Hacking hackers!</p>
+    </div>
+  </div>
+  
+  <div class="skills-grid">
+    <div class="skill-box">
+      <h3>Web Security</h3>
+      <ul>
+        <li>OWASP</li>
+        <li>Penetration Testing</li>
+        <li>Bug Bounty</li>
+      </ul>
+    </div>
+    
+    <div class="skill-box">
+      <h3>Development</h3>
+      <ul>
+        <li>Golang (echo, GOTH)</li>
+        <li>Python (Flask, Django)</li>
+        <li>JavaScript, PHP, Zig</li>
+      </ul>
+    </div>
+    
+    <div class="skill-box">
+      <h3>Tools</h3>
+      <ul>
+        <li>Server Configuration Security</li>
+        <li>Apache/Nginx/Caddy</li>
+        <li>Endpoint Detection</li>
+        <li>Elasticsearch/Fail2ban/Sentry</li>
+        <li>Web Application Security</li>
+        <li>Auth/API/Docker/Kubernetes</li>
+      </ul>
+    </div>
+  </div>
+</div>
 {{ end }}

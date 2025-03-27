@@ -1,8 +1,25 @@
 {{ define "content" }}
-  <title>{{ .Title }}</title>
-  </head>
-  <body>
-    <h1> What Now?! </h1>
-  </body>
-</html>
+<div class="news-container">
+  <h1 class="neon-heading">Latest News</h1>
+  
+  <div class="articles-list">
+    {{if .Articles}}
+      {{range .Articles}}
+        <div class="article-card">
+          <h2 class="article-title"><a href="{{.url}}">{{.title}}</a></h2>
+        </div>
+      {{end}}
+    {{else}}
+      <div class="no-articles">
+        <p>No articles found. Check back later for updates.</p>
+      </div>
+    {{end}}
+  </div>
+  
+  {{if .Authenticated}}
+  <div class="admin-controls">
+    <a href="/admin/articles/new" class="btn btn-primary">Create New Article</a>
+  </div>
+  {{end}}
+</div>
 {{ end }}

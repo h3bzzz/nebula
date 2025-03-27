@@ -34,6 +34,21 @@
             <li class="nav-item">
                 <a class="nav-link {{ if eq .ActivePage "who" }}active{{ end }}" href="/who">Whoami</a>
             </li>
+            {{if .Authenticated}}
+            <li class="nav-item">
+                <a class="nav-link {{ if eq .ActivePage "profile" }}active{{ end }}" href="/profile">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/logout">Logout</a>
+            </li>
+            {{else}}
+            <li class="nav-item">
+                <a class="nav-link {{ if eq .ActivePage "login" }}active{{ end }}" href="/login">Login</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ if eq .ActivePage "register" }}active{{ end }}" href="/register">Register</a>
+            </li>
+            {{end}}
         </ul>
     </nav>
     
@@ -42,6 +57,12 @@
 
     <!-- Main Content -->
     <div id="mainContent" class="container" style="z-index: 1; position: relative;">
+        {{if .SuccessMessage}}
+        <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+            {{.SuccessMessage}}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {{end}}
         {{ block "content" . }}{{ end }}
     </div>
 

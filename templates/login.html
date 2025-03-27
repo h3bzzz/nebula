@@ -1,14 +1,26 @@
 {{ define "content" }}
 <h1>Welcome Back!</h1>
+
+{{if .Error}}
+<div class="alert alert-danger" role="alert">
+    {{.Error}}
+</div>
+{{end}}
+
 <form action="/login" method="POST">
     <!-- CSRF TOKEN -->
     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-    <div class="form-group">
+    
+    <div class="form-group mb-3">
         <label for="username">Username</label>
-        <input type="text" name="username" class="form-control" id="username" placeholder="Hacker Alias">
-        <label for="password">Password</label>
-        <input type="password" name="password" class="form-control" id="password" placeholder="Enter password">
-        <button type="submit" class="btn btn-primary">Login</button>
+        <input type="text" name="username" class="form-control" id="username" placeholder="Hacker Alias" required>
     </div>
+    
+    <div class="form-group mb-3">
+        <label for="password">Password</label>
+        <input type="password" name="password" class="form-control" id="password" placeholder="Enter password" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Login</button>
 </form>
 {{ end }}

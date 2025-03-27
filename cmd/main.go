@@ -7,8 +7,10 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"nebula/controllers"
@@ -40,18 +42,20 @@ var (
 
 func rdbInit() {
 	// Redis Connection Config
+	redisDB, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       3,
+		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       redisDB,
 	})
 
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		log.Fatalf("Error connecting to Redis: %v", err)
+		log.Printf("Warning: Error connecting to Redis: %v", err)
+		// Continue anyway, as Redis is not critical for basic functionality
+	} else {
+		log.Println("Connected to Nebula Redis database")
 	}
-
-	log.Println("Connected to Nebula Redis database")
 }
 
 // Postgresql Connection Config
@@ -59,7 +63,8 @@ func rdbInit() {
 func initDB() *sqlx.DB {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Warning: Error loading .env file:", err)
+		// Continue anyway, will use environment variables directly
 	}
 
 	dbUrl := fmt.Sprintf(
@@ -114,6 +119,26 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 	return tmpl.ExecuteTemplate(w, "base.html", data)
 }
 
+// Redis middleware to make Redis client available to handlers
+func RedisMiddleware(redisClient *redis.Client) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("redis", redisClient)
+			return next(c)
+		}
+	}
+}
+
+// Database middleware to make database client available to handlers
+func DatabaseMiddleware(db *sqlx.DB) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("db", db)
+			return next(c)
+		}
+	}
+}
+
 // MAIN
 func main() {
 
@@ -125,41 +150,45 @@ func main() {
 	rdbInit()
 
 	// Initialize Redis Store
-	store, err := redistore.NewRediStore(10, "tcp", "localhost:6379", "", []byte("secret"))
+	store, err := redistore.NewRediStore(10, "tcp", fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")), os.Getenv("REDIS_PASSWORD"), []byte(os.Getenv("SESSION_SECRET")))
 	if err != nil {
-		log.Fatalf("Error creating Redis Store: %v", err)
+		log.Printf("Warning: Error creating Redis Store: %v. Using memory store instead.", err)
+		// Continue without Redis store, use cookie store
+	} else {
+		store.SetMaxAge(86400)
+		defer store.Close()
 	}
-	defer store.Close()
-	// Session lasts 24 hrs
-	store.SetMaxAge(86400)
 
-	// Start Echo
 	e := echo.New()
 
-	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
-	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(20))))
 
-	// Get Secure
+	cookieStore := sessions.NewCookieStore([]byte(os.Getenv("SESSION_SECRET")))
+	cookieStore.Options.SameSite = http.SameSiteLaxMode
+	cookieStore.Options.HttpOnly = true
+	e.Use(session.Middleware(cookieStore))
+
+	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(20))))
+	e.Use(RedisMiddleware(rdb))
+	e.Use(DatabaseMiddleware(psdb))
+	e.Use(controllers.AuthMiddleware(rdb))
+	e.Use(controllers.FlashMiddleware())
+
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XSSProtection:         "1; mode=block",
 		ContentTypeNosniff:    "nosniff",
 		XFrameOptions:         "SAMEORIGIN",
 		HSTSMaxAge:            3600,
-		ContentSecurityPolicy: "default-src 'self'",
+		ContentSecurityPolicy: "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' data:;",
 		ReferrerPolicy:        "same-origin",
 	}))
 
-	// CSRF Protection
 	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup: "form:csrf_token",
+		TokenLookup:    "form:csrf_token",
+		CookieSameSite: http.SameSiteLaxMode,
 	}))
-
-	// Cookie Store
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
 
 	templateFiles := []string{
 		"home.html",
@@ -192,6 +221,30 @@ func main() {
 	e.GET("/hof", handlers.HofHandler)
 	e.GET("/who", handlers.WhoHandler)
 
+	// S3 Resource Routes
+	s3Controller, err := controllers.NewS3ResourcesController()
+	if err != nil {
+		log.Printf("Warning: S3 controller initialization failed: %v", err)
+	} else {
+		// Replace the existing news handler with S3-powered articles
+		e.GET("/news", s3Controller.ListArticles())
+		e.GET("/news/:id", s3Controller.GetArticle())
+		e.GET("/images/*", s3Controller.GetImage())
+
+		// Admin routes for article and image management
+		adminGroup := e.Group("/admin")
+		adminGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				// Check if user is authenticated
+				if authenticated, ok := c.Get("authenticated").(bool); !ok || !authenticated {
+					return c.Redirect(http.StatusSeeOther, "/login")
+				}
+				return next(c)
+			}
+		})
+		adminGroup.POST("/images/upload", s3Controller.UploadImage())
+	}
+
 	// Authentication Routes
 	e.POST("/register", controllers.RegisterUser(psdb))
 	e.GET("/register", handlers.RenderRegisterPage)
@@ -203,11 +256,16 @@ func main() {
 
 	// Start Server
 	go func() {
-		if err := e.Start(":7777"); err != nil {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "7777" // Default port
+		}
+
+		if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error starting server: %v", err)
 		}
 	}()
-	fmt.Println("Server Nebula is up and running on port 7777")
+	fmt.Println("Server Nebula is up and running on port", os.Getenv("PORT"))
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, os.Kill)

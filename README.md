@@ -1,99 +1,186 @@
-<h1> 🌌 Nebula </h1>
-<h2>
-Nebula is a secure, full-stack web application designed to connect innovators worldwide through cutting-edge cybersecurity features, technology news, and an interactive community.
-The project demonstrates backend capabilities using Go, PostgreSQL, Redis, and Echo, coupled with a frontend enhanced by Bootstrap.
-</h2>
+# Nebula
 
-<h3> 🚀 Features
-# User Authentication:
-</h3>
-Secure registration, login, and logout flow.
-CSRF protection and session management using Redis.
-Password hashing with bcrypt for enhanced security.
-Dynamic Web Pages:
+<p align="center">
+  <img src="static/images/nebula-logo.png" alt="Nebula Logo" width="200">
+</p>
 
-# Homepage with a customizable Matrix rain background.
-Dedicated sections for:
-News: Latest technology and cybersecurity updates.
-TTPS (Tactics, Techniques, and Procedures).
-Hacks of Fame: A curated list of impactful hacks and their analysis.
-WhoAmI: A place for innovators to share their stories.
-MessageWall for communication with advanced sanitization.
+A secure, full-stack web application designed for cybersecurity enthusiasts, hackers, and technology professionals.
 
-# Performance & Security:
-HTTPS with secure headers (HSTS, Content Security Policy, etc.).
-Protection against common vulnerabilities like XSS and CSRF.
-Rate limiting to prevent brute-force attacks.
-Scalable Architecture:
+## Overview
 
-# Backend built with Go for high performance and concurrency.
-PostgreSQL for reliable and efficient data storage.
-Redis for session and token management.
-Responsive Design:
+Nebula is a robust platform that connects innovators through cutting-edge cybersecurity features, technology news, and community interaction. Built with performance and security at its core, Nebula demonstrates advanced backend capabilities using Go, PostgreSQL, Redis, and the Echo framework.
 
-Mobile-friendly UI using Bootstrap.
-Modern and sleek user interface.
-🎯 Upcoming Features
-RSS Feed for News: Stay updated with the latest cybersecurity and technology news delivered directly to your feed reader.
-API for Articles and News: Access Nebula’s news and hacking articles programmatically for seamless integration into your applications or services.
-🛠️ Technology Stack
-Backend:
+## Key Features
 
-Go (Golang)
-Echo framework
-PostgreSQL
-Redis
-Frontend:
+### Authentication & Security
+- Secure user authentication flow with session management
+- CSRF protection and Redis-backed session store
+- Industry-standard password hashing with bcrypt
+- Comprehensive security headers (HSTS, CSP, X-Frame-Options)
+- Rate limiting to mitigate brute-force attacks
 
-HTML5, CSS3
-JavaScript (ES6+)
-Bootstrap 5.3
-Matrix Rain JavaScript effect for immersive design.
-Other Tools:
+### Content & Functionality
+- Dedicated sections for News, TTPS, Hacks of Fame, and community profiles
+- S3 integration for storing and serving articles and images
+- Markdown rendering for article content with security sanitization
+- Responsive, Matrix-inspired UI with modern interactions
 
-Docker (for local development)
-Air (live reload for development)
-Goose (database migrations)
-Sqlx (database interaction)
-⚙️ Installation and Setup
-Follow these steps to get Nebula up and running:
+### Technical Architecture
+- High-performance Go backend with Echo framework
+- PostgreSQL database with efficient connection pooling
+- Redis for fast cache and session management
+- Docker-based development environment
+- Structured project layout optimized for maintainability
 
-Run the Application
-Start PostgreSQL and Redis.
-Initialize the database:
-bash
-Copy code
-goose up
-Run the application:
-bash
-Copy code
-air
-The server will start on http://localhost:7777.
+## Technology Stack
 
-# 🌐 API Endpoints
-Here’s a quick overview of the available and upcoming routes:
+### Backend
+- **Language**: Go (Golang)
+- **Framework**: Echo
+- **Database**: PostgreSQL
+- **Cache/Sessions**: Redis
+- **Storage**: AWS S3
 
-Public Routes
-Method	Endpoint	Description
-GET	/	Home page
-GET	/news	Technology news page
-GET	/ttps	Tactics, Techniques, and Procedures
-GET	/hof	Hacks of Fame
-GET	/who	Innovator stories
-GET	/login	Login page
-GET	/register	Registration page
-Authenticated Routes
-Method	Endpoint	Description
-POST	/register	Register a new user
-POST	/login	Log in as an existing user
-GET	/logout	Log out the current user
-Future API Endpoints
-Method	Endpoint	Description
-GET	/api/news	Retrieve the latest news articles
-GET	/api/articles	Retrieve hacking articles
+### Frontend
+- **HTML/CSS Framework**: Custom CSS with Matrix theme
+- **JavaScript**: Vanilla JS with Matrix rain effect
+- **Templating**: Go's html/template
 
-# 🛡️ Security Features
-CSRF Protection: Middleware ensures that requests include a valid CSRF token.
-Password Hashing: User passwords are hashed with bcrypt.
-Secure Cookies: Session cookies are HTTP-only and use the SameSite attribute.
-Secure Headers: HSTS, CSP, and other headers implemented via middleware
+### DevOps & Tools
+- Docker & Docker Compose
+- Air (live reload)
+- Goose (database migrations)
+- Sqlx (database access)
+
+## Development Setup
+
+### Prerequisites
+- Go 1.24 or higher
+- Docker and Docker Compose
+- PostgreSQL client (optional)
+- Redis client (optional)
+- AWS account with S3 access (for article storage)
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/nebula.git
+   cd nebula
+   ```
+
+2. **Start the database services**
+   ```bash
+   make db-up
+   ```
+
+3. **Configure environment variables**
+   Create a `.env` file in the project root with the following variables (customize as needed):
+   ```
+   # Database Configuration
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=postgres
+   DB_PASS=your_password
+   DB_NAME=nebula
+   DB_SSL_MODE=disable
+
+   # Redis Configuration
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_PASSWORD=
+   REDIS_DB=3
+
+   # AWS S3 Configuration
+   AWS_REGION=your_region
+   AWS_ACCESS_KEY=your_access_key
+   AWS_SECRET_KEY=your_secret_key
+   AWS_BUCKET=your_bucket_name
+
+   # Server Configuration
+   PORT=7777
+
+   # Security Settings
+   SESSION_SECRET=change_this_in_production
+   CSRF_SECRET=change_this_in_production
+   ```
+
+4. **Run database migrations**
+   ```bash
+   goose -dir migrations postgres "host=localhost user=postgres password=your_password dbname=nebula sslmode=disable" up
+   ```
+
+5. **Run the application**
+   ```bash
+   make dev
+   ```
+
+6. **Access the application**
+   Open `http://localhost:7777` in your browser
+
+## API Endpoints
+
+| Method | Endpoint         | Description                            | Auth Required |
+|--------|------------------|----------------------------------------|--------------|
+| GET    | /                | Home page                              | No           |
+| GET    | /news            | List articles from S3                  | No           |
+| GET    | /news/:id        | View specific article                  | No           |
+| GET    | /ttps            | Tactics, Techniques, and Procedures    | No           |
+| GET    | /hof             | Hacks of Fame                          | No           |
+| GET    | /who             | Innovator profiles                     | No           |
+| GET    | /login           | Login page                             | No           |
+| POST   | /login           | Authenticate user                      | No           |
+| GET    | /register        | Registration page                      | No           |
+| POST   | /register        | Create new user                        | No           |
+| GET    | /logout          | Log out current user                   | Yes          |
+| GET    | /images/*        | Serve images from S3                   | No           |
+| POST   | /admin/images/upload | Upload image to S3                 | Yes          |
+
+## Project Structure
+
+```
+nebula/
+├── cmd/                # Application entry points
+│   └── main.go         # Main server
+├── controllers/        # Request handlers with business logic
+├── handlers/           # Simple request handlers
+├── migrations/         # Database migration files
+├── pkg/                # Reusable packages
+│   └── s3client/       # S3 integration
+├── static/             # Static assets
+│   ├── css/            # Stylesheets
+│   ├── js/             # JavaScript files
+│   └── images/         # Static images
+├── templates/          # HTML templates
+├── .env                # Environment variables
+├── docker-compose.yml  # Container configuration
+├── go.mod              # Go dependencies
+└── Makefile            # Development commands
+```
+
+## Available Make Commands
+
+| Command          | Description                               |
+|------------------|-------------------------------------------|
+| `make help`      | Display available commands                |
+| `make dev`       | Run with hot-reloading                    |
+| `make db-up`     | Start database containers                 |
+| `make db-down`   | Stop database containers                  |
+| `make db-reset`  | Reset the database                        |
+| `make install`   | Install Go dependencies                   |
+| `make run`       | Run without hot-reloading                 |
+| `make test`      | Run tests                                 |
+| `make lint`      | Run linters                               |
+| `make build`     | Build the application                     |
+| `make psql`      | Access PostgreSQL CLI                     |
+| `make redis-cli` | Access Redis CLI                          |
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For questions or feedback, please open an issue on the GitHub repository.
+
+

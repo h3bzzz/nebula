@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: nebula-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+      POSTGRES_DB: ${DB_NAME:-nebula}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nebula-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: nebula-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nebula-network
+
+  # Uncomment for production
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: nebula-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/conf.d:/etc/nginx/conf.d
+  #     - ./nginx/ssl:/etc/nginx/ssl
+  #     - ./static:/usr/share/nginx/html/static
+  #   depends_on:
+  #     - api
+  #   restart: unless-stopped
+  #   networks:
+  #     - nebula-network
+
+networks:
+  nebula-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data: 

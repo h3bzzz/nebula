@@ -12,135 +12,268 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	redisClient *redis.Client
-	ctx         = context.Background()
-	psdb        *sqlx.DB
-	userID      uuid.UUID
+	ctx    = context.Background()
+	userID uuid.UUID
 )
+
+// Initialize Redis client
+func InitRedis(addr string, password string, db int) *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+	})
+}
 
 // REGISTER USER
 func RegisterUser(db *sqlx.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var req struct {
-			Username       string `json:"username" validate:"required"`
-			Email          string `json:"email" validate:"required,email"`
-			Password       string `json:"password" validate:"required,min=14"`
-			ProfilePicture []byte `json:"profile_picture" validate:"required"`
+		// Initialize Redis if needed
+		redisClient := c.Get("redis").(*redis.Client)
+		if redisClient == nil {
+			log.Println("Warning: Redis client not initialized, using default")
+			redisClient = InitRedis("localhost:6379", "", 3)
 		}
 
-		if err := c.Bind(&req); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error": err.Error(),
+		// Parse multipart form
+		if err := c.Request().ParseMultipartForm(10 << 20); err != nil { // 10 MB max
+			log.Printf("Form parsing error: %v", err)
+			return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+				"Error":         "Failed to parse form data",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
+			})
+		}
+
+		// Get form values
+		username := c.FormValue("username")
+		email := c.FormValue("email")
+		password := c.FormValue("password")
+		passwordConfirm := c.FormValue("password_confirm")
+
+		// Basic validation
+		if username == "" || email == "" || password == "" {
+			return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+				"Error":         "All fields are required",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
+			})
+		}
+
+		// Check if passwords match
+		if password != passwordConfirm {
+			return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+				"Error":         "Passwords do not match",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
+			})
+		}
+
+		// Check if password is strong enough (min length 8)
+		if len(password) < 8 {
+			return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+				"Error":         "Password must be at least 8 characters",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
 			})
 		}
 
 		// Check if user already exists
 		var count int
 		query := "SELECT COUNT(*) FROM users WHERE username=$1 OR email=$2"
-		err := db.Get(&count, query, req.Username, req.Email)
+		log.Printf("Executing query: %s with username=%s, email=%s", query, username, email)
+		err := db.Get(&count, query, username, email)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error": "Failed to query user",
+			log.Printf("Database error when checking for existing users: %v", err)
+			// Check if database is connected
+			if err := db.Ping(); err != nil {
+				log.Printf("Database connection lost or invalid: %v", err)
+				return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
+					"Error":         "Database connection error. Please try again later.",
+					"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+					"Title":         "Register",
+					"ActivePage":    "register",
+					"Authenticated": false,
+				})
+			}
+			return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
+				"Error":         "Failed to check existing users",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
 			})
 		}
 
 		if count > 0 {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error": "User already exists",
+			return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+				"Error":         "Username or email already exists",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
 			})
 		}
 
 		// Hash Password
-		HashPassword, err := HashPassword(req.Password)
+		hashedPassword, err := HashPassword(password)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error": "Failed to hash password",
+			log.Printf("Password hashing error: %v", err)
+			return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
+				"Error":         "Failed to secure password",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
 			})
+		}
+
+		// Get profile picture (if provided)
+		var profilePicture []byte = nil
+		file, err := c.FormFile("profile_picture")
+		if err == nil && file != nil {
+			src, err := file.Open()
+			if err == nil {
+				defer src.Close()
+
+				// Read the file into memory
+				buffer := make([]byte, file.Size)
+				_, err = src.Read(buffer)
+				if err == nil {
+					profilePicture = buffer
+				} else {
+					log.Printf("Error reading profile picture: %v", err)
+				}
+			} else {
+				log.Printf("Error opening profile picture: %v", err)
+			}
 		}
 
 		// Insert User into PSQLDB
 		userID = uuid.New()
-		query = "INSERT INTO users (id, username, email, password_hash, profile_picture, role, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-		_, err = db.Exec(query, userID, req.Username, req.Email, HashPassword, req.ProfilePicture, "user", time.Now())
+		query = "INSERT INTO users (id, username, email, password, profile_picture, role, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+		_, err = db.Exec(query, userID, username, email, hashedPassword, profilePicture, "user", time.Now())
 
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error": "Failed to create user",
+			log.Printf("Database insertion error: %v", err)
+			return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
+				"Error":         "Failed to create user",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Register",
+				"ActivePage":    "register",
+				"Authenticated": false,
 			})
 		}
 
 		// Generate Session Token
 		sessionToken := GenSessionToken()
 		if err := StoreSessionToken(redisClient, sessionToken, userID); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error": "Failed to store session token",
-			})
+			log.Printf("Redis error: %v", err)
+			// Continue anyway - user was created
 		}
 
-		// Set Session Cookie, have redis manage session tokens
+		// Set Session Cookie
 		SetSessionCookie(c, sessionToken)
-		StoreSessionToken(redisClient, sessionToken, userID)
+
+		// Set success message
+		SetFlashMessage(c, "success", "Registration successful! Welcome to Sy-Fi Networks.")
 
 		return c.Redirect(http.StatusSeeOther, "/")
-
-		// Give User "user" role
-
-		// Store in S3 Bucket Profile Picture
-
 	}
 }
 
 // LOGIN USER
 func LoginUser(db *sqlx.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var req struct {
-			Username string `json:"username" validate:"required"`
-			Password string `json:"password" validate:"required"`
+		// Initialize Redis if needed
+		redisClient := c.Get("redis").(*redis.Client)
+		if redisClient == nil {
+			log.Println("Warning: Redis client not initialized, using default")
+			redisClient = InitRedis("localhost:6379", "", 3)
 		}
 
-		if err := c.Bind(&req); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error": err.Error(),
+		// Parse form
+		if err := c.Request().ParseForm(); err != nil {
+			return c.Render(http.StatusBadRequest, "login.html", map[string]interface{}{
+				"Error":         "Failed to parse form",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Login",
+				"ActivePage":    "login",
+				"Authenticated": false,
+			})
+		}
+
+		// Get form values
+		username := c.FormValue("username")
+		password := c.FormValue("password")
+
+		// Basic validation
+		if username == "" || password == "" {
+			return c.Render(http.StatusBadRequest, "login.html", map[string]interface{}{
+				"Error":         "Username and password are required",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Login",
+				"ActivePage":    "login",
+				"Authenticated": false,
 			})
 		}
 
 		var user struct {
 			ID       uuid.UUID `db:"id"`
 			Username string    `db:"username"`
-			PassHash string    `db:"password_hash"`
+			PassHash string    `db:"password"`
 		}
-		query := "SELECT id, username, password_hash FROM users WHERE username=$1"
-		err := db.Get(&user, query, req.Username)
+		query := "SELECT id, username, password FROM users WHERE username=$1"
+		err := db.Get(&user, query, username)
 		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-				"error": "Invalid username",
+			log.Printf("Login query error: %v", err)
+			return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
+				"Error":         "Invalid username or password",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Login",
+				"ActivePage":    "login",
+				"Authenticated": false,
 			})
 		}
 
 		// Verify Password
-		if err := VerifyPassword(user.PassHash, req.Password); err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-				"error": "Invalid password",
+		if err := VerifyPassword(user.PassHash, password); err != nil {
+			return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
+				"Error":         "Invalid username or password",
+				"CSRFToken":     c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+				"Title":         "Login",
+				"ActivePage":    "login",
+				"Authenticated": false,
 			})
 		}
 
 		// Generate Session Token
 		sessionToken := GenSessionToken()
 		if err := StoreSessionToken(redisClient, sessionToken, user.ID); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error": "Failed to store session token",
-			})
+			log.Printf("Redis error: %v", err)
+			// Continue anyway - user can still log in
 		}
 
 		// Set Session Cookie
 		SetSessionCookie(c, sessionToken)
-		StoreSessionToken(redisClient, sessionToken, user.ID)
+
+		// Set success message
+		SetFlashMessage(c, "success", "Login successful! Welcome back, "+user.Username+".")
 
 		return c.Redirect(http.StatusSeeOther, "/")
 	}
@@ -149,20 +282,28 @@ func LoginUser(db *sqlx.DB) echo.HandlerFunc {
 // LOGOUT USER
 func LogoutUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cookie, err := c.Cookie(userID.String())
+		// Initialize Redis if needed
+		redisClient := c.Get("redis").(*redis.Client)
+		if redisClient == nil {
+			log.Println("Warning: Redis client not initialized, using default")
+			redisClient = InitRedis("localhost:6379", "", 3)
+		}
+
+		// Get the session cookie
+		cookie, err := c.Cookie("session_token")
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error": "Failed to get cookie",
-			})
+			// Just redirect to home if no cookie
+			return c.Redirect(http.StatusSeeOther, "/")
 		}
 
+		// Delete the session from Redis
 		if err := redisClient.Del(ctx, cookie.Value).Err(); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error": "Failed to delete session token",
-			})
+			log.Printf("Redis error during logout: %v", err)
 		}
 
-		cookie.Expires = time.Now()
+		// Expire the cookie
+		cookie.Expires = time.Now().Add(-1 * time.Hour)
+		cookie.MaxAge = -1
 		c.SetCookie(cookie)
 
 		return c.Redirect(http.StatusSeeOther, "/")
@@ -229,12 +370,48 @@ func VerifyPassword(HashPassword, password string) error {
 // Set Session Cookie
 func SetSessionCookie(c echo.Context, token string) {
 	cookie := new(http.Cookie)
-	cookie.Name = userID.String()
+	cookie.Name = "session_token"
 	cookie.Value = token
 	cookie.HttpOnly = true
-	cookie.Secure = true
-	cookie.SameSite = http.SameSiteStrictMode
+	cookie.Path = "/"
+
+	// Only use Secure in production
+	if c.Request().TLS != nil {
+		cookie.Secure = true
+	}
+
+	cookie.SameSite = http.SameSiteLaxMode
 	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.MaxAge = 86400 // 24 hours in seconds
 
 	c.SetCookie(cookie)
+}
+
+// AuthMiddleware checks if a user is authenticated
+func AuthMiddleware(redisClient *redis.Client) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Get the token from the cookie
+			cookie, err := c.Cookie("session_token")
+			if err != nil {
+				// No cookie, user is not authenticated
+				// Store authentication status in context
+				c.Set("authenticated", false)
+				return next(c)
+			}
+
+			// Validate token from Redis
+			userID, err := EvalSessionToken(redisClient, cookie.Value)
+			if err != nil || userID == uuid.Nil {
+				// Invalid token or user not found
+				c.Set("authenticated", false)
+				return next(c)
+			}
+
+			// User is authenticated, store user ID in context
+			c.Set("authenticated", true)
+			c.Set("userID", userID)
+			return next(c)
+		}
+	}
 }
