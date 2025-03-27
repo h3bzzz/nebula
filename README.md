@@ -1,7 +1,7 @@
 # Nebula
 
 <p align="center">
-  <img src="static/images/nebula-logo.png" alt="Nebula Logo" width="200">
+  <img src="https://github.com/h3bzzz/nebula/blob/main/static/images/nebula-air-echo.jpg" alt="Nebula Logo" width="200">
 </p>
 
 A secure, full-stack web application designed for cybersecurity enthusiasts, hackers, and technology professionals.
